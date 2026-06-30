@@ -1,0 +1,77 @@
+HTML
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ระบบประเมินครู | สพฐ.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <style>
+        @media print { .no-print { display: none !important; } }
+        .gradient-bg { background: linear-gradient(135deg, #0056b3, #28a745); }
+    </style>
+</head>
+<body class="bg-gray-50 p-4">
+    <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div class="gradient-bg p-6 text-center text-white">
+            <img src="https://i.postimg.cc/65ZhJHVB/Chat-GPT-Image-30-m-y-2569-19-14-02.png" class="w-32 h-32 mx-auto mb-4 bg-white rounded-full p-1 shadow-lg border-4 border-white">
+            <h1 class="text-2xl font-bold">การประเมินครู | สพฐ.</h1>
+        </div>
+        <div class="p-6">
+            <div id="setup-form" class="space-y-4 no-print">
+                <select id="subject" class="w-full p-3 bg-gray-50 border rounded-lg outline-none">
+                    <option>คณิตศาสตร์</option><option>ภาษาไทย</option><option>วิทยาศาสตร์และเทคโนโลยี</option>
+                </select>
+                <input type="text" id="level" placeholder="ระดับชั้น" class="w-full p-3 bg-gray-50 border rounded-lg outline-none">
+                <input type="text" id="topic" placeholder="เรื่องที่สอน" class="w-full p-3 bg-gray-50 border rounded-lg outline-none">
+            </div>
+            <video id="video" class="w-full h-56 bg-gray-900 rounded-xl mt-6 mb-4 no-print" autoplay playsinline></video>
+            <div class="flex gap-2 no-print">
+                <button id="startBtn" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold">เริ่มประเมินสภาพจริง</button>
+                <button id="stopBtn" class="flex-1 bg-red-500 text-white py-3 rounded-lg font-bold" disabled>จบการสอน</button>
+            </div>
+            <div id="results" class="mt-6 hidden">
+                <div id="summaryText"></div>
+                <button onclick="window.print()" class="no-print mt-6 w-full bg-green-600 text-white py-3 rounded-lg font-bold">พิมพ์รายงาน (A4)</button>
+            </div>
+        </div>
+        <div class="text-center p-4 bg-gray-100 text-gray-500 text-xs">พัฒนาโดย: @วีระชัย หาญมะโน</div>
+    </div>
+
+    <script>
+        let logs = [], timer;
+        const faceMesh = new FaceMesh({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
+        
+        faceMesh.onResults(results => {
+            // ถ้าตรวจพบใบหน้า ให้คะแนนความสนใจ
+            const score = results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0 ? 95 : 20;
+            logs.push(score);
+        });
+
+        startBtn.onclick = async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('video').srcObject = stream;
+            const camera = new Camera(document.getElementById('video'), { onFrame: () => faceMesh.send({image: document.getElementById('video')}) });
+            camera.start();
+            startBtn.disabled = true; stopBtn.disabled = false;
+        };
+
+        stopBtn.onclick = async () => {
+            const res = await fetch('http://localhost:8000/analyze', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    subject: document.getElementById('subject').value,
+                    level: document.getElementById('level').value,
+                    topic: document.getElementById('topic').value,
+                    engagement_data: logs
+                })
+            });
+            const data = await res.json();
+            document.getElementById('summaryText').innerHTML = data.content;
+            document.getElementById('results').classList.remove('hidden');
+        };
+    </script>
+</body>
+</html>
