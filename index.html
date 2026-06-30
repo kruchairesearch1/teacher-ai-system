@@ -58,7 +58,7 @@ HTML
         };
 
         stopBtn.onclick = async () => {
-            const res = await fetch('http://localhost:8000/analyze', {
+            const res = await fetch('https://teacher-ai-system.onrender.com/analyze', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
