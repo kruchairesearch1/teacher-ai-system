@@ -1,7 +1,7 @@
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import uvicorn
 from datetime import datetime
 
 app = FastAPI()
@@ -28,6 +28,11 @@ subject_data = {
     "ประวัติศาสตร์": {"detail": "การเชื่อมโยงเหตุการณ์ในอดีตกับสถานการณ์ปัจจุบัน", "advice": "ควรใช้สื่อมัลติมีเดียที่ทำให้ประวัติศาสตร์น่าสนใจ"}
 }
 
+# ส่วนเชื่อมต่อหน้าเว็บหลัก
+@app.get("/")
+async def read_index():
+    return FileResponse("index.html")
+
 class SessionData(BaseModel):
     subject: str
     level: str
@@ -41,7 +46,7 @@ async def analyze_data(data: SessionData):
     status = "ดีเยี่ยม" if avg > 75 else "ควรปรับปรุง"
     subj_info = subject_data.get(data.subject, {"detail": "การเรียนรู้เชิงรุก", "advice": "รักษาบรรยากาศการเรียนรู้ที่ดี"})
     
-    # รูปแบบรายงานที่คุณต้องการ
+    # รูปแบบรายงาน
     report_content = f"""
     <div class="p-8 bg-white text-black border border-gray-400 rounded-lg shadow-sm">
         <h1 class="text-center font-bold text-2xl mb-8">บันทึกรายงานการประเมินการจัดการเรียนรู้</h1>
@@ -62,6 +67,3 @@ async def analyze_data(data: SessionData):
     </div>
     """
     return {"content": report_content}
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
